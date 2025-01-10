@@ -4,3 +4,4 @@ class DrawingMode(Enum):
     BRUSH = "Brush"
     POLYGON = "Polygon"
     LINES = "Lines"
+    NOTES = "Notes"

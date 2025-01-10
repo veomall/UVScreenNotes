@@ -18,6 +18,8 @@ class DrawingApp(QMainWindow):
         
         # Добавляем обработчик горячих клавиш
         self.installEventFilter(self)
+        
+        self.setFocusPolicy(Qt.NoFocus)
 
     def init_ui(self):
         screen = QApplication.primaryScreen().geometry()
@@ -47,6 +49,10 @@ class DrawingApp(QMainWindow):
                 self.control_window.toggle_visibility()
                 return True
         return super().eventFilter(obj, event)
+
+    def focusInEvent(self, event):
+        # Игнорируем попытки получения фокуса основным окном
+        event.ignore()
 
 
 def main():

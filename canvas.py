@@ -4,6 +4,8 @@ from PyQt5.QtCore import Qt, QPoint
 from copy import deepcopy
 from drawing_modes import DrawingMode
 import math
+from note_card import NoteCard
+from note_input_dialog import NoteInputDialog
 
 class Canvas(QWidget):
     def __init__(self, parent=None):
@@ -14,6 +16,7 @@ class Canvas(QWidget):
         # Настройки рисования
         self.pen_color = QColor(Qt.black)
         self.pen_width = 5
+        self.drawing_opacity = 255
         
         # Создаем два pixmap: один для фона, другой для рисунка
         screen = QApplication.primaryScreen().geometry()
@@ -39,6 +42,9 @@ class Canvas(QWidget):
         self.line_vertical = True
         self.line_spacing = 0
         self.screen = QApplication.primaryScreen().geometry()
+        self.notes = []
+
+        self.setFocusPolicy(Qt.NoFocus)  # Отключаем фокус для холста
 
     def set_drawing_mode(self, mode):
         self.drawing_mode = mode
@@ -80,6 +86,10 @@ class Canvas(QWidget):
     def set_line_spacing(self, spacing):
         self.line_spacing = spacing
         
+    def set_drawing_opacity(self, opacity):
+        """Set opacity for new drawings (1-255)"""
+        self.drawing_opacity = opacity
+        
     def draw_line_at_position(self, pos, painter=None):
         """Draw a line at position using existing painter or create new one"""
         if painter is None:
@@ -90,7 +100,9 @@ class Canvas(QWidget):
 
     def _draw_line(self, painter, pos):
         """Internal method to draw line using provided painter"""
-        painter.setPen(QPen(self.pen_color, self.pen_width, Qt.SolidLine, Qt.RoundCap))
+        color = QColor(self.pen_color)
+        color.setAlpha(self.drawing_opacity)
+        painter.setPen(QPen(color, self.pen_width, Qt.SolidLine, Qt.RoundCap))
         if self.line_spacing == 0:  # Сплошная линия
             if self.line_vertical:
                 painter.drawLine(pos.x(), 0, pos.x(), self.screen.height())
@@ -116,6 +128,9 @@ class Canvas(QWidget):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
+            if self.drawing_mode == DrawingMode.NOTES:
+                self.add_note(event.pos())
+                return
             self.drawing = True
             self.last_point = event.pos()
             if self.drawing_mode == DrawingMode.POLYGON:
@@ -130,14 +145,17 @@ class Canvas(QWidget):
             
         if self.drawing_mode == DrawingMode.BRUSH:
             with QPainter(self.drawing_layer) as painter:
-                painter.setPen(QPen(self.pen_color, self.pen_width, Qt.SolidLine, Qt.RoundCap))
+                color = QColor(self.pen_color)
+                color.setAlpha(self.drawing_opacity)
+                painter.setPen(QPen(color, self.pen_width, Qt.SolidLine, Qt.RoundCap))
                 painter.drawLine(self.last_point, event.pos())
             # Сохраняем точки для истории
             self.current_stroke.append({
                 'start': self.last_point,
                 'end': event.pos(),
                 'color': QColor(self.pen_color),
-                'width': self.pen_width
+                'width': self.pen_width,
+                'opacity': self.drawing_opacity
             })
             self.last_point = event.pos()
         elif self.drawing_mode == DrawingMode.POLYGON:
@@ -244,4 +262,19 @@ class Canvas(QWidget):
             
             self.history.clear()  # Очищаем историю
             self.drawing_layer.fill(Qt.transparent)
+            for note in self.notes:
+                note.close()  # Используем close() вместо deleteLater()
+            self.notes.clear()
             self.update()
+
+    def add_note(self, pos):
+        dialog = NoteInputDialog(self)
+        if dialog.exec_() == NoteInputDialog.Accepted:
+            text = dialog.get_text()
+            if text.strip():  # Создаем заметку только если текст не пустой
+                note = NoteCard(text=text, pos=self.mapToGlobal(pos))
+                self.notes.append(note)
+                note.raise_()
+                note.activateWindow()
+                return note
+        return None
