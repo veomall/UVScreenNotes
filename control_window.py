@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QApplication, 
-                           QPushButton, QSlider, QLabel, QColorDialog)
+                           QPushButton, QSlider, QLabel, QColorDialog, QHBoxLayout)
 from PyQt5.QtGui import QColor
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QSize  # Added QSize here
 
 class ControlWindow(QMainWindow):
     def __init__(self, canvas_window):
@@ -10,42 +10,68 @@ class ControlWindow(QMainWindow):
         self.setWindowTitle('Controls')
         
         central_widget = QWidget()
-        layout = QVBoxLayout()
+        layout = QHBoxLayout()  # Используем горизонтальный layout
         
-        # Кнопки управления
-        self.toggle_btn = QPushButton('Disable Drawing')
+        # Группа кнопок управления рисованием
+        drawing_layout = QHBoxLayout()
+        
+        # Создаем и настраиваем кнопки с фиксированным размером
+        btn_size = QSize(30, 30)
+        
+        self.toggle_btn = QPushButton('✏️')
+        self.toggle_btn.setToolTip('Toggle Drawing Mode')
         self.toggle_btn.clicked.connect(self.toggle_drawing)
-        layout.addWidget(self.toggle_btn)
+        self.toggle_btn.setFixedSize(btn_size)
+        drawing_layout.addWidget(self.toggle_btn)
         
-        # Кнопка очистки
-        self.clear_btn = QPushButton('Clear Canvas')
+        self.clear_btn = QPushButton('🗑️')
+        self.clear_btn.setToolTip('Clear Canvas')
         self.clear_btn.clicked.connect(self.clear_canvas)
-        layout.addWidget(self.clear_btn)
+        self.clear_btn.setFixedSize(btn_size)
+        drawing_layout.addWidget(self.clear_btn)
         
-        # Настройки линии
-        layout.addWidget(QLabel('Line Width:'))
+        self.undo_btn = QPushButton('↩️')
+        self.undo_btn.setToolTip('Undo')
+        self.undo_btn.clicked.connect(lambda: self.canvas_window.canvas.undo())
+        self.undo_btn.setFixedSize(btn_size)
+        drawing_layout.addWidget(self.undo_btn)
+        
+        self.redo_btn = QPushButton('↪️')
+        self.redo_btn.setToolTip('Redo')
+        self.redo_btn.clicked.connect(lambda: self.canvas_window.canvas.redo())
+        self.redo_btn.setFixedSize(btn_size)
+        drawing_layout.addWidget(self.redo_btn)
+        
+        layout.addLayout(drawing_layout)
+        
+        # Настройки линии в отдельной группе
+        line_layout = QHBoxLayout()
         self.width_slider = QSlider(Qt.Horizontal)
+        self.width_slider.setFixedWidth(60)
         self.width_slider.setMinimum(1)
         self.width_slider.setMaximum(20)
         self.width_slider.setValue(5)
         self.width_slider.valueChanged.connect(self.change_line_width)
-        layout.addWidget(self.width_slider)
+        line_layout.addWidget(self.width_slider)
         
         # Выбор цвета
-        self.color_btn = QPushButton('Choose Color')
+        self.color_btn = QPushButton()
+        self.color_btn.setToolTip('Choose Color')
         self.color_btn.clicked.connect(self.choose_color)
-        layout.addWidget(self.color_btn)
-        
+        self.color_btn.setFixedSize(btn_size)
         self.current_color = QColor(Qt.black)
         self.update_color_button()
+        line_layout.addWidget(self.color_btn)
+        
+        layout.addLayout(line_layout)
         
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
         
         # Настройки окна
-        self.setFixedSize(200, 150)  # Увеличили размер для новой кнопки
+        self.setFixedSize(250, 50)
         screen = QApplication.primaryScreen().geometry()
-        self.move(screen.width() - 220, 20)
+        self.move(screen.width() - 270, 20)
         
         self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
         self.raise_timer = QTimer(self)
@@ -57,7 +83,7 @@ class ControlWindow(QMainWindow):
     
     def toggle_drawing(self):
         self.canvas_window.toggle_click_through()
-        self.toggle_btn.setText('Enable Drawing' if self.canvas_window.is_clickthrough else 'Disable Drawing')
+        self.toggle_btn.setText('🎅' if self.canvas_window.is_clickthrough else '✏️')
     
     def change_line_width(self, value):
         self.canvas_window.canvas.pen_width = value
