@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QEvent
 from canvas import Canvas
 from control_window import ControlWindow
 import sys
@@ -15,6 +15,9 @@ class DrawingApp(QMainWindow):
         
         # Понижаем z-order холста
         self.lower()
+        
+        # Добавляем обработчик горячих клавиш
+        self.installEventFilter(self)
 
     def init_ui(self):
         screen = QApplication.primaryScreen().geometry()
@@ -36,6 +39,14 @@ class DrawingApp(QMainWindow):
         self.show()
         self.showFullScreen()
         self.lower()  # Снова понижаем z-order после переключения флагов
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.KeyPress:  # Changed from Qt.KeyPress to QEvent.KeyPress
+            # Alt+H для показа/скрытия окна настроек
+            if event.key() == Qt.Key_H and event.modifiers() == Qt.AltModifier:
+                self.control_window.toggle_visibility()
+                return True
+        return super().eventFilter(obj, event)
 
 
 def main():

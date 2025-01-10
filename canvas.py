@@ -65,10 +65,12 @@ class Canvas(QWidget):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             QApplication.quit()
-        # Добавим очистку по клавише C
         elif event.key() == Qt.Key_C:
-            self.drawing_layer.fill(Qt.transparent)
-            self.update()
+            self.clear_canvas()
+        elif event.key() == Qt.Key_H and event.modifiers() == Qt.AltModifier:
+            # Добавляем обработку Alt+H и здесь
+            self.parent().control_window.toggle_visibility()
+        self.update()
     
     def undo(self):
         if self.history:

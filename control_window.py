@@ -12,6 +12,25 @@ class ControlWindow(QMainWindow):
         central_widget = QWidget()
         layout = QHBoxLayout()  # Используем горизонтальный layout
         
+        # Добавляем кнопки управления окном в начало
+        window_controls = QHBoxLayout()
+        btn_size = QSize(20, 20)  # Меньше чем основные кнопки
+        
+        self.minimize_btn = QPushButton('—')
+        self.minimize_btn.setToolTip('Minimize')
+        self.minimize_btn.clicked.connect(self.minimize_window)
+        self.minimize_btn.setFixedSize(btn_size)
+        window_controls.addWidget(self.minimize_btn)
+        
+        self.close_btn = QPushButton('×')
+        self.close_btn.setToolTip('Close')
+        self.close_btn.clicked.connect(QApplication.quit)
+        self.close_btn.setFixedSize(btn_size)
+        self.close_btn.setStyleSheet('QPushButton { color: red; }')
+        window_controls.addWidget(self.close_btn)
+        
+        layout.insertLayout(0, window_controls)
+        
         # Группа кнопок управления рисованием
         drawing_layout = QHBoxLayout()
         
@@ -78,6 +97,13 @@ class ControlWindow(QMainWindow):
         self.raise_timer.timeout.connect(self.ensure_on_top)
         self.raise_timer.start(100)
 
+        # Создаем мини-версию окна
+        self.mini_window = MiniButton('🎨', self)
+        self.mini_window.setFixedSize(30, 30)
+        self.mini_window.clicked.connect(self.restore_window)
+        self.mini_window.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.Tool | Qt.FramelessWindowHint)
+        self.mini_window.hide()
+
     def clear_canvas(self):
         self.canvas_window.canvas.clear_canvas()
     
@@ -105,3 +131,40 @@ class ControlWindow(QMainWindow):
     def ensure_on_top(self):
         self.raise_()
         self.activateWindow()
+        
+    def minimize_window(self):
+        self.hide()
+        self.mini_window.move(10, 10)  # Позиционируем в левом верхнем углу
+        self.mini_window.show()
+        # Автоматически включаем режим прозрачности для кликов
+        if not self.canvas_window.is_clickthrough:
+            self.canvas_window.toggle_click_through()
+            self.toggle_btn.setText('🎅')
+        
+    def restore_window(self):
+        self.mini_window.hide()
+        self.show()
+        # Возвращаем режим рисования
+        if self.canvas_window.is_clickthrough:
+            self.canvas_window.toggle_click_through()
+            self.toggle_btn.setText('✏️')
+    
+    def toggle_visibility(self):
+        if self.isVisible():
+            self.minimize_window()
+        elif self.mini_window.isVisible():
+            self.restore_window()
+        else:
+            self.show()
+            # При показе окна возвращаем режим рисования
+            if self.canvas_window.is_clickthrough:
+                self.canvas_window.toggle_click_through()
+                self.toggle_btn.setText('✏️')
+
+# Добавляем новый класс для мини-кнопки
+class MiniButton(QPushButton):
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            # Вызываем обработчик клика только для левой кнопки мыши
+            super().mousePressEvent(event)
+            self.click()  # Эмулируем клик для вызова сигнала clicked
