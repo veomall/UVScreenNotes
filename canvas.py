@@ -36,6 +36,10 @@ class Canvas(QWidget):
         self.polygon_radius = 0
         self.polygon_angle = 0
 
+        self.line_vertical = True
+        self.line_spacing = 0
+        self.screen = QApplication.primaryScreen().geometry()
+
     def set_drawing_mode(self, mode):
         self.drawing_mode = mode
 
@@ -53,14 +57,56 @@ class Canvas(QWidget):
             y = center.y() + radius * math.sin(point_angle)
             points.append(QPoint(int(x), int(y)))
         
-        painter = QPainter(self.drawing_layer)
-        painter.setPen(QPen(self.pen_color, self.pen_width, Qt.SolidLine, Qt.RoundCap))
-        
-        # Рисуем полигон
-        for i in range(len(points)):
-            painter.drawLine(points[i], points[(i + 1) % len(points)])
+        with QPainter(self.drawing_layer) as painter:
+            painter.setPen(QPen(self.pen_color, self.pen_width, Qt.SolidLine, Qt.RoundCap))
+            # Рисуем полигон
+            for i in range(len(points)):
+                painter.drawLine(points[i], points[(i + 1) % len(points)])
         
         return points
+
+    def set_line_direction(self, vertical: bool):  # Fixed method name to match call
+        """Set the direction of lines. True for vertical, False for horizontal."""
+        self.line_vertical = vertical
+        print(f"Line direction set to: {'vertical' if vertical else 'horizontal'}")  # Для отладки
+        
+        # Обновляем текущее отображение, если есть активная линия
+        if self.drawing and self.drawing_mode == DrawingMode.LINES:
+            self.drawing_layer.fill(Qt.transparent)
+            self.redraw_from_history()
+            self.draw_line_at_position(self.last_point)
+            self.update()
+        
+    def set_line_spacing(self, spacing):
+        self.line_spacing = spacing
+        
+    def draw_line_at_position(self, pos, painter=None):
+        """Draw a line at position using existing painter or create new one"""
+        if painter is None:
+            with QPainter(self.drawing_layer) as painter:
+                self._draw_line(painter, pos)
+        else:
+            self._draw_line(painter, pos)
+
+    def _draw_line(self, painter, pos):
+        """Internal method to draw line using provided painter"""
+        painter.setPen(QPen(self.pen_color, self.pen_width, Qt.SolidLine, Qt.RoundCap))
+        if self.line_spacing == 0:  # Сплошная линия
+            if self.line_vertical:
+                painter.drawLine(pos.x(), 0, pos.x(), self.screen.height())
+            else:
+                painter.drawLine(0, pos.y(), self.screen.width(), pos.y())
+        else:  # Пунктирная линия
+            if self.line_vertical:
+                y = 0
+                while y < self.screen.height():
+                    painter.drawLine(pos.x(), y, pos.x(), min(y + 10, self.screen.height()))
+                    y += 10 + self.line_spacing
+            else:
+                x = 0
+                while x < self.screen.width():
+                    painter.drawLine(x, pos.y(), min(x + 10, self.screen.width()), pos.y())
+                    x += 10 + self.line_spacing
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -74,6 +120,8 @@ class Canvas(QWidget):
             self.last_point = event.pos()
             if self.drawing_mode == DrawingMode.POLYGON:
                 self.polygon_center = event.pos()
+            elif self.drawing_mode == DrawingMode.LINES:
+                self.draw_line_at_position(event.pos())
             self.current_stroke = []  # Начинаем новый штрих
 
     def mouseMoveEvent(self, event):
@@ -81,9 +129,9 @@ class Canvas(QWidget):
             return
             
         if self.drawing_mode == DrawingMode.BRUSH:
-            painter = QPainter(self.drawing_layer)
-            painter.setPen(QPen(self.pen_color, self.pen_width, Qt.SolidLine, Qt.RoundCap))
-            painter.drawLine(self.last_point, event.pos())
+            with QPainter(self.drawing_layer) as painter:
+                painter.setPen(QPen(self.pen_color, self.pen_width, Qt.SolidLine, Qt.RoundCap))
+                painter.drawLine(self.last_point, event.pos())
             # Сохраняем точки для истории
             self.current_stroke.append({
                 'start': self.last_point,
@@ -103,6 +151,19 @@ class Canvas(QWidget):
                 'color': QColor(self.pen_color),
                 'width': self.pen_width,
                 'sides': self.polygon_sides
+            }]
+        elif self.drawing_mode == DrawingMode.LINES:
+            self.last_point = event.pos()  # Обновляем последнюю точку
+            self.drawing_layer.fill(Qt.transparent)
+            self.redraw_from_history()
+            self.draw_line_at_position(event.pos())
+            self.current_stroke = [{
+                'mode': DrawingMode.LINES,
+                'position': event.pos(),
+                'vertical': self.line_vertical,  # Сохраняем текущее направление
+                'spacing': self.line_spacing,
+                'color': QColor(self.pen_color),
+                'width': self.pen_width
             }]
         self.update()
 
@@ -135,17 +196,36 @@ class Canvas(QWidget):
 
     def redraw_from_history(self):
         self.drawing_layer.fill(Qt.transparent)
-        painter = QPainter(self.drawing_layer)
-        for stroke in self.history:
-            if isinstance(stroke, list):  # Если это штрих
-                if all('mode' in line for line in stroke):  # Если это полигон
+        with QPainter(self.drawing_layer) as painter:
+            for stroke in self.history:
+                if isinstance(stroke, list) and all('mode' in line for line in stroke):
                     for line in stroke:
-                        if line['mode'] == DrawingMode.POLYGON:
+                        if line['mode'] == DrawingMode.LINES:
+                            # Временно сохраняем текущие настройки
+                            old_vertical = self.line_vertical
+                            old_spacing = self.line_spacing
+                            old_color = self.pen_color
+                            old_width = self.pen_width
+                            
+                            # Устанавливаем настройки из истории
+                            self.line_vertical = line['vertical']
+                            self.line_spacing = line['spacing']
+                            self.pen_color = line['color']
+                            self.pen_width = line['width']
+                            
+                            self._draw_line(painter, line['position'])
+                            
+                            # Восстанавливаем текущие настройки
+                            self.line_vertical = old_vertical
+                            self.line_spacing = old_spacing
+                            self.pen_color = old_color
+                            self.pen_width = old_width
+                        elif line['mode'] == DrawingMode.POLYGON:
                             painter.setPen(QPen(line['color'], line['width'], Qt.SolidLine, Qt.RoundCap))
                             points = line['points']
                             for i in range(len(points)):
                                 painter.drawLine(points[i], points[(i + 1) % len(points)])
-                else:  # Если это обычные линии
+                else:
                     for line in stroke:
                         painter.setPen(QPen(line['color'], line['width'], Qt.SolidLine, Qt.RoundCap))
                         painter.drawLine(line['start'], line['end'])

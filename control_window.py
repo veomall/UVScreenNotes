@@ -78,6 +78,13 @@ class ControlWindow(QMainWindow):
         self.polygon_btn.clicked.connect(lambda: self.switch_mode(DrawingMode.POLYGON))
         drawing_layout.addWidget(self.polygon_btn)
 
+        self.lines_btn = QPushButton('⊢')
+        self.lines_btn.setToolTip('Lines Mode')
+        self.lines_btn.setFixedSize(btn_size)
+        self.lines_btn.setCheckable(True)
+        self.lines_btn.clicked.connect(lambda: self.switch_mode(DrawingMode.LINES))
+        drawing_layout.addWidget(self.lines_btn)
+
         # Создаем слайдер для количества сторон полигона
         self.sides_slider = QSlider(Qt.Horizontal)
         self.sides_slider.setFixedWidth(60)
@@ -87,6 +94,25 @@ class ControlWindow(QMainWindow):
         self.sides_slider.valueChanged.connect(lambda v: self.canvas_window.canvas.set_polygon_sides(v))
         self.sides_slider.hide()  # Скрываем изначально
         drawing_layout.addWidget(self.sides_slider)
+
+        # Настройки для линий
+        self.line_direction_btn = QPushButton('↕️')
+        self.line_direction_btn.setToolTip('Toggle Line Direction')
+        self.line_direction_btn.setFixedSize(btn_size)
+        self.line_direction_btn.clicked.connect(self.toggle_line_direction)
+        self.line_direction_btn.hide()
+        drawing_layout.addWidget(self.line_direction_btn)
+
+        # Слайдер расстояния между линиями
+        self.line_spacing_slider = QSlider(Qt.Horizontal)
+        self.line_spacing_slider.setFixedWidth(60)
+        self.line_spacing_slider.setMinimum(0)
+        self.line_spacing_slider.setMaximum(100)
+        self.line_spacing_slider.setValue(0)
+        self.line_spacing_slider.valueChanged.connect(
+            lambda v: self.canvas_window.canvas.set_line_spacing(v))
+        self.line_spacing_slider.hide()
+        drawing_layout.addWidget(self.line_spacing_slider)
 
         layout.addLayout(drawing_layout)
         
@@ -188,16 +214,29 @@ class ControlWindow(QMainWindow):
                 self.canvas_window.toggle_click_through()
                 self.toggle_btn.setText('✏️')
 
+    def toggle_line_direction(self):
+        is_vertical = self.line_direction_btn.text() == '↕️'
+        self.line_direction_btn.setText('↔️' if is_vertical else '↕️')
+        # Исправляем логику: передаем True для вертикальных линий и False для горизонтальных
+        self.canvas_window.canvas.set_line_direction(not is_vertical)  # Инвертируем значение
+
     def switch_mode(self, mode):
         self.canvas_window.canvas.set_drawing_mode(mode)
         # Обновляем состояние кнопок
         self.brush_btn.setChecked(mode == DrawingMode.BRUSH)
         self.polygon_btn.setChecked(mode == DrawingMode.POLYGON)
-        # Показываем/скрываем слайдер сторон
+        self.lines_btn.setChecked(mode == DrawingMode.LINES)
+        
+        # Показываем/скрываем настройки режимов
         self.sides_slider.setVisible(mode == DrawingMode.POLYGON)
+        self.line_direction_btn.setVisible(mode == DrawingMode.LINES)
+        self.line_spacing_slider.setVisible(mode == DrawingMode.LINES)
+        
         # Обновляем размер окна
         if mode == DrawingMode.POLYGON:
             self.setFixedSize(560, 50)
+        elif mode == DrawingMode.LINES:
+            self.setFixedSize(600, 50)
         else:
             self.setFixedSize(500, 50)
 
