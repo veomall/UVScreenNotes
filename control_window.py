@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QApplication, 
-                           QPushButton, QSlider, QLabel, QColorDialog, QHBoxLayout)
+                           QPushButton, QSlider, QLabel, QColorDialog, QHBoxLayout, QComboBox, QStackedWidget, QSpinBox)
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt, QTimer, QSize  # Added QSize here
+from drawing_modes import DrawingMode
 
 class ControlWindow(QMainWindow):
     def __init__(self, canvas_window):
@@ -61,6 +62,32 @@ class ControlWindow(QMainWindow):
         self.redo_btn.setFixedSize(btn_size)
         drawing_layout.addWidget(self.redo_btn)
         
+        # Группа кнопок выбора режима рисования
+        self.brush_btn = QPushButton('🖌️')
+        self.brush_btn.setToolTip('Brush Mode')
+        self.brush_btn.setFixedSize(btn_size)
+        self.brush_btn.setCheckable(True)
+        self.brush_btn.setChecked(True)
+        self.brush_btn.clicked.connect(lambda: self.switch_mode(DrawingMode.BRUSH))
+        drawing_layout.addWidget(self.brush_btn)
+
+        self.polygon_btn = QPushButton('🔷')
+        self.polygon_btn.setToolTip('Polygon Mode')
+        self.polygon_btn.setFixedSize(btn_size)
+        self.polygon_btn.setCheckable(True)
+        self.polygon_btn.clicked.connect(lambda: self.switch_mode(DrawingMode.POLYGON))
+        drawing_layout.addWidget(self.polygon_btn)
+
+        # Создаем слайдер для количества сторон полигона
+        self.sides_slider = QSlider(Qt.Horizontal)
+        self.sides_slider.setFixedWidth(60)
+        self.sides_slider.setMinimum(3)
+        self.sides_slider.setMaximum(12)
+        self.sides_slider.setValue(5)
+        self.sides_slider.valueChanged.connect(lambda v: self.canvas_window.canvas.set_polygon_sides(v))
+        self.sides_slider.hide()  # Скрываем изначально
+        drawing_layout.addWidget(self.sides_slider)
+
         layout.addLayout(drawing_layout)
         
         # Настройки линии в отдельной группе
@@ -88,9 +115,9 @@ class ControlWindow(QMainWindow):
         self.setCentralWidget(central_widget)
         
         # Настройки окна
-        self.setFixedSize(250, 50)
+        self.setFixedSize(500, 50)
         screen = QApplication.primaryScreen().geometry()
-        self.move(screen.width() - 270, 20)
+        self.move(screen.width() - 520, 20)
         
         self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
         self.raise_timer = QTimer(self)
@@ -160,6 +187,19 @@ class ControlWindow(QMainWindow):
             if self.canvas_window.is_clickthrough:
                 self.canvas_window.toggle_click_through()
                 self.toggle_btn.setText('✏️')
+
+    def switch_mode(self, mode):
+        self.canvas_window.canvas.set_drawing_mode(mode)
+        # Обновляем состояние кнопок
+        self.brush_btn.setChecked(mode == DrawingMode.BRUSH)
+        self.polygon_btn.setChecked(mode == DrawingMode.POLYGON)
+        # Показываем/скрываем слайдер сторон
+        self.sides_slider.setVisible(mode == DrawingMode.POLYGON)
+        # Обновляем размер окна
+        if mode == DrawingMode.POLYGON:
+            self.setFixedSize(560, 50)
+        else:
+            self.setFixedSize(500, 50)
 
 # Добавляем новый класс для мини-кнопки
 class MiniButton(QPushButton):
