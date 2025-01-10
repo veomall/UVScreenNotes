@@ -10,7 +10,7 @@ class NoteCard(QLabel):
         
         self.dragging = False
         self.offset = QPoint()
-        self.bg_color = QColor(color)
+        self.bg_color = QColor("#FFE082")  # Более приятный желтый цвет
         self.bg_color.setAlpha(opacity)
         
         # Настраиваем отображение текста
@@ -28,17 +28,30 @@ class NoteCard(QLabel):
             self.move(pos)
         self.show()
         
+        # Настройка шрифта
+        font = self.font()
+        font.setPointSize(12)
+        font.setFamily("Segoe UI")
+        self.setFont(font)
+        
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         
+        # Рисуем тень
+        painter.setPen(Qt.NoPen)
+        shadow = QColor(0, 0, 0, 30)
+        for i in range(5):
+            painter.setBrush(QColor(shadow.red(), shadow.green(), shadow.blue(), 5))
+            painter.drawRoundedRect(self.rect().adjusted(i, i, -i, -i), 10, 10)
+        
         # Рисуем фон
         painter.setBrush(self.bg_color)
-        painter.setPen(QPen(Qt.gray, 1))
+        painter.setPen(QPen(QColor("#E6B422"), 1))  # Более тёмная рамка
         painter.drawRoundedRect(self.rect(), 10, 10)
         
         # Рисуем текст
-        text_rect = self.rect().adjusted(10, 10, -10, -10)  # Отступы для текста
+        text_rect = self.rect().adjusted(15, 10, -15, -10)
         painter.setPen(Qt.black)
         painter.drawText(text_rect, Qt.AlignLeft | Qt.TextWordWrap, self.text())
         

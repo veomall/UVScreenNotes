@@ -1,0 +1,121 @@
+/* Dracula theme colors */
+/* Background: #282a36 */
+/* Current Line: #44475a */
+/* Selection: #44475a */
+/* Foreground: #f8f8f2 */
+/* Comment: #6272a4 */
+/* Purple: #bd93f9 */
+/* Pink: #ff79c6 */
+/* Cyan: #8be9fd */
+
+/* Общие стили для всех кнопок */
+QPushButton {
+    border: 1px solid #6272a4;
+    border-radius: 5px;
+    padding: 2px;
+    background: #bd93f9;  /* Светло-фиолетовый фон */
+    color: #282a36;       /* Тёмный текст */
+}
+
+QPushButton:hover {
+    background: #ff79c6;  /* Розовый при наведении */
+    border: 1px solid #8be9fd;
+}
+
+QPushButton:pressed {
+    background: #6272a4;  /* Тёмно-синий при нажатии */
+}
+
+QPushButton:checked {
+    background: #ff79c6;  /* Розовый для активного состояния */
+    border: 2px solid #8be9fd;
+}
+
+/* Стили для слайдеров */
+QSlider::groove:horizontal {
+    border: 1px solid #44475a;
+    height: 4px;
+    background: #282a36;
+    margin: 2px 0;
+    border-radius: 2px;
+}
+
+QSlider::handle:horizontal {
+    background: #bd93f9;
+    border: 1px solid #44475a;
+    width: 18px;
+    height: 18px;
+    margin: -8px 0;
+    border-radius: 9px;
+}
+
+QSlider::handle:horizontal:hover {
+    background: #ff79c6;
+    border: 1px solid #6272a4;
+}
+
+/* Стили для окна управления */
+ControlWindow {
+    background: #282a36;
+    border: 1px solid #44475a;
+    border-radius: 5px;
+}
+
+/* Стили для заметок */
+NoteCard {
+    background: #282a36;
+    color: #f8f8f2;
+    font-size: 14px;
+    border: 1px solid #44475a;
+}
+
+/* Стили для диалога ввода заметок */
+NoteInputDialog {
+    background: #323232;
+    color: #ffffff;
+}
+
+/* Стили для текстового редактора */
+QTextEdit {
+    background: #282a36;
+    color: #f8f8f2;
+    border: 1px solid #44475a;
+    border-radius: 5px;
+    padding: 5px;
+    selection-background-color: #44475a;
+}
+
+/* Специальные стили для кнопок управления окном */
+#minimize_btn, #close_btn {
+    border: none;
+    border-radius: 2px;
+    padding: 2px;
+    background: transparent;
+}
+
+#minimize_btn:hover {
+    background: #6272a4;
+}
+
+#close_btn:hover {
+    background: #ff5555;
+}
+
+/* Стили для кнопки выбора цвета */
+#color_btn {
+    border: 3px solid #6272a4;
+    border-radius: 15px;
+    min-width: 30px;
+    min-height: 30px;
+}
+
+#color_btn:hover {
+    border-color: #8be9fd;
+}
+
+/* Стили для значений слайдеров */
+QLabel {
+    color: #f8f8f2;
+    font-size: 10px;
+    padding: 0 2px;
+}

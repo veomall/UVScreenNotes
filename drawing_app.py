@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication
 from PyQt5.QtCore import Qt, QEvent
+from PyQt5.QtWinExtras import QtWin  # Добавляем для Windows
 from canvas import Canvas
 from control_window import ControlWindow
 import sys
@@ -57,6 +58,16 @@ class DrawingApp(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
+    
+    # Загружаем стили
+    with open('styles.qss', 'r') as f:
+        style = f.read()
+        app.setStyleSheet(style)
+    
+    if hasattr(sys, 'frozen'):
+        # Устанавливаем иконку для exe файла
+        QtWin.setCurrentProcessExplicitAppUserModelID('UVScreenNotes')
+    
     window = DrawingApp()
     window.showFullScreen()
     sys.exit(app.exec_())
